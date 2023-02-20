@@ -1,0 +1,11 @@
+# Pip install
+numpy
+pandas
+scipy
+networkx
+matplotlib
+pyvis
+
+# Other commands
+conda install nb_conda_kernels
+conda install ipykernel
