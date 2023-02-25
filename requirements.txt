@@ -5,7 +5,9 @@ scipy
 networkx
 matplotlib
 pyvis
+odfpy
 
 # Other commands
 conda install nb_conda_kernels
 conda install ipykernel
+pip install --force-reinstall -v "openpyxl==3.1.0"

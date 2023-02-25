@@ -1,0 +1,696 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 750px;
+                 background-color: #ffffff;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="AMD">AMD</option>
+                                
+                                    <option value="IXC">IXC</option>
+                                
+                                    <option value="DED">DED</option>
+                                
+                                    <option value="DEL">DEL</option>
+                                
+                                    <option value="JAI">JAI</option>
+                                
+                                    <option value="LKO">LKO</option>
+                                
+                                    <option value="IXB">IXB</option>
+                                
+                                    <option value="VNS">VNS</option>
+                                
+                                    <option value="PAT">PAT</option>
+                                
+                                    <option value="BBI">BBI</option>
+                                
+                                    <option value="RPR">RPR</option>
+                                
+                                    <option value="HYD">HYD</option>
+                                
+                                    <option value="MAA">MAA</option>
+                                
+                                    <option value="BLR">BLR</option>
+                                
+                                    <option value="COK">COK</option>
+                                
+                                    <option value="PNQ">PNQ</option>
+                                
+                                    <option value="GOX">GOX</option>
+                                
+                                    <option value="GOI">GOI</option>
+                                
+                                    <option value="BOM">BOM</option>
+                                
+                                    <option value="JDH">JDH</option>
+                                
+                                    <option value="AGR">AGR</option>
+                                
+                                    <option value="BHO">BHO</option>
+                                
+                                    <option value="IDR">IDR</option>
+                                
+                                    <option value="NAG">NAG</option>
+                                
+                                    <option value="ISK">ISK</option>
+                                
+                                    <option value="BHJ">BHJ</option>
+                                
+                                    <option value="IXG">IXG</option>
+                                
+                                    <option value="RAJ">RAJ</option>
+                                
+                                    <option value="STV">STV</option>
+                                
+                                    <option value="SAG">SAG</option>
+                                
+                                    <option value="BDQ">BDQ</option>
+                                
+                                    <option value="UDR">UDR</option>
+                                
+                                    <option value="ATQ">ATQ</option>
+                                
+                                    <option value="GWL">GWL</option>
+                                
+                                    <option value="KNU">KNU</option>
+                                
+                                    <option value="IXD">IXD</option>
+                                
+                                    <option value="DBR">DBR</option>
+                                
+                                    <option value="IXR">IXR</option>
+                                
+                                    <option value="RDP">RDP</option>
+                                
+                                    <option value="GAU">GAU</option>
+                                
+                                    <option value="CCU">CCU</option>
+                                
+                                    <option value="IXA">IXA</option>
+                                
+                                    <option value="VTZ">VTZ</option>
+                                
+                                    <option value="IXZ">IXZ</option>
+                                
+                                    <option value="TRV">TRV</option>
+                                
+                                    <option value="CJB">CJB</option>
+                                
+                                    <option value="IXE">IXE</option>
+                                
+                                    <option value="HBX">HBX</option>
+                                
+                                    <option value="KLH">KLH</option>
+                                
+                                    <option value="KJB">KJB</option>
+                                
+                                    <option value="VGA">VGA</option>
+                                
+                                    <option value="RJA">RJA</option>
+                                
+                                    <option value="TIR">TIR</option>
+                                
+                                    <option value="PNY">PNY</option>
+                                
+                                    <option value="TRZ">TRZ</option>
+                                
+                                    <option value="IXM">IXM</option>
+                                
+                                    <option value="TCR">TCR</option>
+                                
+                                    <option value="CCJ">CCJ</option>
+                                
+                                    <option value="CNN">CNN</option>
+                                
+                                    <option value="GBI">GBI</option>
+                                
+                                    <option value="IXX">IXX</option>
+                                
+                                    <option value="BHU">BHU</option>
+                                
+                                    <option value="JLR">JLR</option>
+                                
+                                    <option value="JGA">JGA</option>
+                                
+                                    <option value="SXR">SXR</option>
+                                
+                                    <option value="IXJ">IXJ</option>
+                                
+                                    <option value="IXL">IXL</option>
+                                
+                                    <option value="BEK">BEK</option>
+                                
+                                    <option value="GOP">GOP</option>
+                                
+                                    <option value="IXU">IXU</option>
+                                
+                                    <option value="DIU">DIU</option>
+                                
+                                    <option value="IXY">IXY</option>
+                                
+                                    <option value="SDW">SDW</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+              <div id="filter-menu" class="card-header">
+                <div class="row no-gutters">
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'item')"
+                            id="select-item"
+                        >
+                        <option value="">Select a network item</option>
+                        <option value="edge">edge</option>
+                        <option value="node">node</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'property')"
+                            id="select-property"
+                        >
+                        <option value="">Select a property...</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            id="select-value"
+                        >
+                        <option value="">Select value(s)...</option>
+                    </select>
+                  </div>
+                  <div class="col-1 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
+                  </div>
+                  <div class="col-2 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
+                  </div>
+                </div>
+              </div>
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "green", "id": "AMD", "label": "AMD", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXC", "label": "IXC", "shape": "dot", "size": 10}, {"color": "yellow", "id": "DED", "label": "DED", "shape": "dot", "size": 10}, {"color": "green", "id": "DEL", "label": "DEL", "shape": "dot", "size": 10}, {"color": "yellow", "id": "JAI", "label": "JAI", "shape": "dot", "size": 10}, {"color": "green", "id": "LKO", "label": "LKO", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXB", "label": "IXB", "shape": "dot", "size": 10}, {"color": "yellow", "id": "VNS", "label": "VNS", "shape": "dot", "size": 10}, {"color": "yellow", "id": "PAT", "label": "PAT", "shape": "dot", "size": 10}, {"color": "yellow", "id": "BBI", "label": "BBI", "shape": "dot", "size": 10}, {"color": "yellow", "id": "RPR", "label": "RPR", "shape": "dot", "size": 10}, {"color": "green", "id": "HYD", "label": "HYD", "shape": "dot", "size": 10}, {"color": "green", "id": "MAA", "label": "MAA", "shape": "dot", "size": 10}, {"color": "green", "id": "BLR", "label": "BLR", "shape": "dot", "size": 10}, {"color": "green", "id": "COK", "label": "COK", "shape": "dot", "size": 10}, {"color": "green", "id": "PNQ", "label": "PNQ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "GOX", "label": "GOX", "shape": "dot", "size": 10}, {"color": "green", "id": "GOI", "label": "GOI", "shape": "dot", "size": 10}, {"color": "green", "id": "BOM", "label": "BOM", "shape": "dot", "size": 10}, {"color": "yellow", "id": "JDH", "label": "JDH", "shape": "dot", "size": 10}, {"color": "red", "id": "AGR", "label": "AGR", "shape": "dot", "size": 10}, {"color": "yellow", "id": "BHO", "label": "BHO", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IDR", "label": "IDR", "shape": "dot", "size": 10}, {"color": "yellow", "id": "NAG", "label": "NAG", "shape": "dot", "size": 10}, {"color": "yellow", "id": "ISK", "label": "ISK", "shape": "dot", "size": 10}, {"color": "red", "id": "BHJ", "label": "BHJ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXG", "label": "IXG", "shape": "dot", "size": 10}, {"color": "red", "id": "RAJ", "label": "RAJ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "STV", "label": "STV", "shape": "dot", "size": 10}, {"color": "red", "id": "SAG", "label": "SAG", "shape": "dot", "size": 10}, {"color": "red", "id": "BDQ", "label": "BDQ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "UDR", "label": "UDR", "shape": "dot", "size": 10}, {"color": "yellow", "id": "ATQ", "label": "ATQ", "shape": "dot", "size": 10}, {"color": "red", "id": "GWL", "label": "GWL", "shape": "dot", "size": 10}, {"color": "red", "id": "KNU", "label": "KNU", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXD", "label": "IXD", "shape": "dot", "size": 10}, {"color": "red", "id": "DBR", "label": "DBR", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXR", "label": "IXR", "shape": "dot", "size": 10}, {"color": "red", "id": "RDP", "label": "RDP", "shape": "dot", "size": 10}, {"color": "yellow", "id": "GAU", "label": "GAU", "shape": "dot", "size": 10}, {"color": "green", "id": "CCU", "label": "CCU", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXA", "label": "IXA", "shape": "dot", "size": 10}, {"color": "yellow", "id": "VTZ", "label": "VTZ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXZ", "label": "IXZ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "TRV", "label": "TRV", "shape": "dot", "size": 10}, {"color": "yellow", "id": "CJB", "label": "CJB", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXE", "label": "IXE", "shape": "dot", "size": 10}, {"color": "yellow", "id": "HBX", "label": "HBX", "shape": "dot", "size": 10}, {"color": "red", "id": "KLH", "label": "KLH", "shape": "dot", "size": 10}, {"color": "red", "id": "KJB", "label": "KJB", "shape": "dot", "size": 10}, {"color": "yellow", "id": "VGA", "label": "VGA", "shape": "dot", "size": 10}, {"color": "red", "id": "RJA", "label": "RJA", "shape": "dot", "size": 10}, {"color": "yellow", "id": "TIR", "label": "TIR", "shape": "dot", "size": 10}, {"color": "red", "id": "PNY", "label": "PNY", "shape": "dot", "size": 10}, {"color": "yellow", "id": "TRZ", "label": "TRZ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "IXM", "label": "IXM", "shape": "dot", "size": 10}, {"color": "red", "id": "TCR", "label": "TCR", "shape": "dot", "size": 10}, {"color": "yellow", "id": "CCJ", "label": "CCJ", "shape": "dot", "size": 10}, {"color": "yellow", "id": "CNN", "label": "CNN", "shape": "dot", "size": 10}, {"color": "red", "id": "GBI", "label": "GBI", "shape": "dot", "size": 10}, {"color": "red", "id": "IXX", "label": "IXX", "shape": "dot", "size": 10}, {"color": "red", "id": "BHU", "label": "BHU", "shape": "dot", "size": 10}, {"color": "yellow", "id": "JLR", "label": "JLR", "shape": "dot", "size": 10}, {"color": "red", "id": "JGA", "label": "JGA", "shape": "dot", "size": 10}, {"color": "yellow", "id": "SXR", "label": "SXR", "shape": "dot", "size": 10}, {"color": "red", "id": "IXJ", "label": "IXJ", "shape": "dot", "size": 10}, {"color": "red", "id": "IXL", "label": "IXL", "shape": "dot", "size": 10}, {"color": "red", "id": "BEK", "label": "BEK", "shape": "dot", "size": 10}, {"color": "red", "id": "GOP", "label": "GOP", "shape": "dot", "size": 10}, {"color": "red", "id": "IXU", "label": "IXU", "shape": "dot", "size": 10}, {"color": "red", "id": "DIU", "label": "DIU", "shape": "dot", "size": 10}, {"color": "red", "id": "IXY", "label": "IXY", "shape": "dot", "size": 10}, {"color": "red", "id": "SDW", "label": "SDW", "shape": "dot", "size": 10}]);
+                  edges = new vis.DataSet([{"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "IXC", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "DED", "width": 1}, {"Number of Flights": 24.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "DEL", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "red", "from": "AMD", "to": "JAI", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "LKO", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "IXB", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "VNS", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "PAT", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "BBI", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "RPR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "black", "from": "AMD", "to": "HYD", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "MAA", "width": 1}, {"Number of Flights": 11.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "BLR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "COK", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "red", "from": "AMD", "to": "PNQ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "black", "from": "AMD", "to": "GOX", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "AMD", "to": "GOI", "width": 1}, {"Number of Flights": 21.0, "arrows": "to", "color": "yellow", "from": "AMD", "to": "BOM", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "AMD", "to": "JDH", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "AMD", "to": "AGR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "AMD", "to": "BHO", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "red", "from": "AMD", "to": "IDR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "AMD", "to": "NAG", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "AMD", "to": "ISK", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "green", "from": "AMD", "to": "BHJ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "green", "from": "AMD", "to": "IXG", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BLR", "to": "GOI", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BLR", "to": "GOX", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BLR", "to": "BOM", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "RAJ", "width": 1}, {"Number of Flights": 18.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "PNQ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "STV", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BLR", "to": "SAG", "width": 1}, {"Number of Flights": 11.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "AMD", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "BDQ", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "JDH", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "UDR", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IDR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "ATQ", "width": 1}, {"Number of Flights": 10.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "JAI", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXC", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "BHO", "width": 1}, {"Number of Flights": 44.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "DEL", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "AGR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "DED", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "GWL", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "NAG", "width": 1}, {"Number of Flights": 22.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "HYD", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "KNU", "width": 1}, {"Number of Flights": 8.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "LKO", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXD", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "black", "from": "BLR", "to": "VNS", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "RPR", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "PAT", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "DBR", "width": 1}, {"Number of Flights": 6.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXR", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXB", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "RDP", "width": 1}, {"Number of Flights": 7.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "GAU", "width": 1}, {"Number of Flights": 20.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "CCU", "width": 1}, {"Number of Flights": 6.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "BBI", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXA", "width": 1}, {"Number of Flights": 8.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "VTZ", "width": 1}, {"Number of Flights": 13.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "MAA", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "IXZ", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "TRV", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "CJB", "width": 1}, {"Number of Flights": 16.0, "arrows": "to", "color": "yellow", "from": "BLR", "to": "COK", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "IXE", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "green", "from": "BLR", "to": "HBX", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BLR", "to": "IXG", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "KLH", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "KJB", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "red", "from": "BLR", "to": "VGA", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BLR", "to": "RJA", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "TIR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BLR", "to": "PNY", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "red", "from": "BLR", "to": "TRZ", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "red", "from": "BLR", "to": "IXM", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "TCR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BLR", "to": "CCJ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BLR", "to": "CNN", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "green", "from": "BLR", "to": "GBI", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "green", "from": "BLR", "to": "IXX", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "AMD", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "ATQ", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "IXC", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "JAI", "width": 1}, {"Number of Flights": 30.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "DEL", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "DED", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "IDR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "LKO", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "PAT", "width": 1}, {"Number of Flights": 7.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "NAG", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "GAU", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "IXR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "RPR", "width": 1}, {"Number of Flights": 8.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "CCU", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "BBI", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "HYD", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "MAA", "width": 1}, {"Number of Flights": 18.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "BLR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "CJB", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "TRV", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "COK", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "IXE", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "IXG", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "GOX", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "PNQ", "to": "GOI", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "BHU", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "JLR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "PNQ", "to": "TIR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "JGA", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "RAJ", "width": 1}, {"Number of Flights": 21.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "AMD", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "JDH", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "BDQ", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "UDR", "width": 1}, {"Number of Flights": 8.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "SXR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BOM", "to": "IXJ", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "ATQ", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXL", "width": 1}, {"Number of Flights": 10.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXC", "width": 1}, {"Number of Flights": 12.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "JAI", "width": 1}, {"Number of Flights": 70.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "DEL", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "DED", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "BEK", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "GWL", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IDR", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "KNU", "width": 1}, {"Number of Flights": 11.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "LKO", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "BHO", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "GOP", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXD", "width": 1}, {"Number of Flights": 8.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "VNS", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "DBR", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "PAT", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXB", "width": 1}, {"Number of Flights": 6.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "GAU", "width": 1}, {"Number of Flights": 9.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "NAG", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXR", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "RDP", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXU", "width": 1}, {"Number of Flights": 19.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "CCU", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "RPR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BOM", "to": "BBI", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "VTZ", "width": 1}, {"Number of Flights": 14.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "HYD", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "TIR", "width": 1}, {"Number of Flights": 21.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "MAA", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BOM", "to": "BLR", "width": 1}, {"Number of Flights": 3.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXM", "width": 1}, {"Number of Flights": 4.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "TRV", "width": 1}, {"Number of Flights": 9.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "COK", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "CJB", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "CCJ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "CNN", "width": 1}, {"Number of Flights": 5.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXE", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "black", "from": "BOM", "to": "GOI", "width": 1}, {"Number of Flights": 6.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "GOX", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "yellow", "from": "BOM", "to": "IXZ", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BOM", "to": "DIU", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BOM", "to": "BHJ", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BOM", "to": "IXY", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BOM", "to": "BHU", "width": 1}, {"Number of Flights": 2.0, "arrows": "to", "color": "red", "from": "BOM", "to": "JLR", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BOM", "to": "HBX", "width": 1}, {"Number of Flights": 1.0, "arrows": "to", "color": "red", "from": "BOM", "to": "SDW", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
