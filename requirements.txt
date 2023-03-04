@@ -6,6 +6,7 @@ networkx
 matplotlib
 pyvis
 odfpy
+geopy
 
 # Other commands
 conda install nb_conda_kernels

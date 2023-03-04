@@ -32,5 +32,5 @@ def fetch_CityPairWiseDomesticPassengers():
 
     total_domestic_data.to_csv("./PreProcessed_Datasets/CityPairWiseDomesticPassengers/CityPairWiseDomesticPassengers.csv", index = None)
 
-# Testing
-fetch_CityPairWiseDomesticPassengers()
+# # Testing
+# fetch_CityPairWiseDomesticPassengers()
