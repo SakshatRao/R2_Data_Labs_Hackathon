@@ -42,7 +42,9 @@ class PreProcessor:
     def fetch_PreProcessed_AirRouteDatasets(self):
         self.city_mapping = pd.read_csv('./PreProcessed_Datasets/CityMapping.csv')
         self.all_network_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_Flights.csv")
+        self.all_airport_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_Airports.csv")
         self.network_data = pd.read_csv(f"./PreProcessed_Datasets/SampleAirRouteDatasets/Sample{self.sample_num}.csv")
+        self.network_data.drop('Dummy', axis = 1, inplace = True)
         print("Loaded AirRouteDatasets")
 
     def fetch_PreProcessed_CityPairWiseDomesticPassengers(self):
@@ -50,12 +52,18 @@ class PreProcessor:
         print("Loaded Domestic Passenger Data")
 
     def fetch_PreProcessed_IndianRailwaysData(self):
+        self.all_station_districts_data = pd.read_csv("./PreProcessed_Datasets/OtherTransportModes/Railways/IndianRailwayStations/all_station_districts.csv")
         with open("./PreProcessed_Datasets/OtherTransportModes/Railways/IndianRailwayRoutes/CityToCityRoutes.json", "r") as load_file:
             self.city_to_city_train_dict = json.load(load_file)
         print("Loaded Indian Railways Data")
     
     def fetch_PreProcessed_SocioEconomicData(self):
         self.economic_data = pd.read_csv("./PreProcessed_Datasets/IndiaEconomicData/EconomicData.csv")
+        self.pop_area_household_data = pd.read_csv("./PreProcessed_Datasets/IndiaSocialData/Pop_Area_Household.csv")
+        self.latest_population_data = pd.read_csv("./PreProcessed_Datasets/IndiaSocialData/IndiaPopulation23WithCoords.csv")
+        self.education_data = pd.read_csv("./PreProcessed_Datasets/IndiaEducationalData/EducationData.csv")
+        with open('./PreProcessed_Datasets/IndiaSocialData/PopulationHistory.json', 'r') as load_file:
+            self.population_history_data = json.load(load_file)
         print("Loaded Socio-Economic Data")
     
     def fetch_PreProcessed_IndiaTourismData(self):
