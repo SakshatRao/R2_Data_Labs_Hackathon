@@ -2,6 +2,7 @@
 # Repo-specific excludes
 Datasets/
 PreProcessed_Datasets/
+Analysis_Outputs/
 ###############################################################
 
 # Byte-compiled / optimized / DLL files

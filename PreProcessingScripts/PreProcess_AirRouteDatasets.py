@@ -105,14 +105,15 @@ def fetch_SampleAirRouteDatasets(sample_num = 1):
     network_list = []
     for idx, row in connections_data.iterrows():
         source_airport = row['Source']
+        is_hub = row['IsHub']
         dest_idx = 1
         while(True):
             if(pd.isnull(row[str(dest_idx)])):
                 break
             destination_airport = row[str(dest_idx)]
-            network_list.append([source_airport, destination_airport, -1])
+            network_list.append([source_airport, is_hub, destination_airport, -1])
             dest_idx += 1
-    network_data = pd.DataFrame(network_list, columns = ['From', 'To', 'Dummy'])
+    network_data = pd.DataFrame(network_list, columns = ['From', 'FromHub', 'To', 'Dummy'])
 
     network_data.to_csv(f"./PreProcessed_Datasets/SampleAirRouteDatasets/Sample{sample_num}.csv", index = None)
 

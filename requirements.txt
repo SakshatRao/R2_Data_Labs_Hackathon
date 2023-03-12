@@ -8,6 +8,7 @@ pyvis
 odfpy
 geopy
 seaborn
+ipympl
 
 # Other commands
 conda install nb_conda_kernels
