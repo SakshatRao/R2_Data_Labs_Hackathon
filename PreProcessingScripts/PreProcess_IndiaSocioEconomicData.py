@@ -38,9 +38,10 @@ def fetch_IndiaSocioEconomicData():
     # Population, Area & Household Data
     print("Opening Population, Area & Household Data")
     pop_area_household_data = pd.read_excel("./Datasets/IndiaSocialData/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx", header = [0, 1, 2, 3])
-    pop_area_household_data = pop_area_household_data.drop(pop_area_household_data.columns[:3], axis = 1)
+    pop_area_household_data = pop_area_household_data.drop(pop_area_household_data.columns[1:3], axis = 1)
     pop_area_household_data.columns = ['_'.join([str(x) for x in col]) for col in pop_area_household_data.columns.values]
     pop_area_household_data.rename({
+        'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_State  Code_Unnamed: 0_level_2_1': 'StateCode',
         'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_India/ State/ Union Territory/ District/ Sub-district_Unnamed: 3_level_2_4': 'IsDistrict',
         'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_Name_Unnamed: 4_level_2_5': 'District',
         'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_Total/\nRural/\nUrban_Unnamed: 5_level_2_6': 'IsTotal',
@@ -72,19 +73,34 @@ def fetch_IndiaSocioEconomicData():
         data_start_point = False
         district_data_start_point = False
         district_pop_data_start_point = False
+        valid = False
         for idx, row in population_data.iterrows():
             if(district_data_start_point == True):
                 if(pd.isnull(row['0']) == False):
                     district = row['2'].lower()
                     if(district in district_pop_info):
-                        if(district_pop_info[district]['state'] == state):
-                            print("ALERT! Found copy district ", district, "in state ", state)
-                    district_pop_info[district.strip()] = {'state': state, 'history': {}}
+                        if(district_pop_info[district]['state'] != state):
+                            print("ALERT! Found copy district ", district, "in states ", state, " and ", district_pop_info[district]['state'])
+                            if(
+                                ((district == 'aurangabad') & (state == 'maharashtra')) |
+                                ((district == 'hamirpur') & (state == 'himachal pradesh')) |
+                                ((district == 'bilaspur') & (state == 'chattisgarh'))
+                            ):
+                                valid = True
+                            else:
+                                valid = False
+                        else:
+                            valid = True
+                    else:
+                        valid = True
+                    if(valid == True):
+                        district_pop_info[district.strip()] = {'state': state, 'history': {}}
                     district_pop_data_start_point = True
                 if(district_pop_data_start_point == True):
                     if(pd.isnull(row['3']) == False):
                         year = str(row['3'])
-                        district_pop_info[district.strip()]['history'][year] = [row['4'], row['7'], row['8']]
+                        if(valid == True):
+                            district_pop_info[district.strip()]['history'][year] = [row['4'], row['7'], row['8']]
                     else:
                         district_pop_data_start_point = False
             if((district_data_start_point == False) and (data_start_point == True)):
@@ -100,6 +116,7 @@ def fetch_IndiaSocioEconomicData():
     # Latest Population Data
     print("Opening Latest Population Data")
     pop_data = pd.read_csv("./Datasets/IndiaSocialData/IndiaPopulation23WithCoords.csv", usecols = ['city', 'pop2023', 'latitude', 'longitude'])
+    pop_data = pop_data.groupby('city')[['pop2023', 'latitude', 'longitude']].aggregate('max').reset_index(drop = False).rename({'index': 'city'}, axis = 1)
     pop_data.to_csv("./PreProcessed_Datasets/IndiaSocialData/IndiaPopulation23WithCoords.csv", index = None)
 
     # Education Data

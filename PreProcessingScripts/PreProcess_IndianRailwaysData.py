@@ -130,6 +130,14 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
                 all_station_districts[station_code]['State'] = station_state
         all_station_districts_df = pd.DataFrame.from_dict(all_station_districts, orient = 'index').reset_index(drop = False)
         all_station_districts_df = all_station_districts_df.rename({'index': 'StationCode'}, axis = 1)
+
+        def duplicate_districts(row):
+            if(row['District'] in ['Bilaspur', 'Raigarh', 'Aurangabad']):
+                return row['District'] + '_' + row['State']
+            else:
+                return row['District']
+        all_station_districts_df['District'] = all_station_districts_df.apply(duplicate_districts, axis = 1)
+
         all_station_districts_df.to_csv("./PreProcessed_Datasets/OtherTransportModes/Railways/IndianRailwayStations/all_station_districts.csv", index = None)
     
     else:
@@ -180,8 +188,8 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
                         arrival_time = time.mktime(time.strptime(f"2023:{arrival}", "%Y:%H:%M:%S"))
                         departure_time = time.mktime(time.strptime(f"2023:{departure}", "%Y:%H:%M:%S"))
                         # If arrival is at end of one day and departure is at start of next, then add one day to departure timing
-                        # Assumption is late arrival would be post 8 PM and early departure would be before 4 AM
-                        if((time.localtime(arrival_time).tm_hour in [20, 21, 22, 23]) and (time.localtime(departure_time).tm_hour in [0, 1, 2, 3])):
+                        # Assumption is late arrival would be post 7 PM and early departure would be before 5 AM
+                        if((time.localtime(arrival_time).tm_hour in [19, 20, 21, 22, 23]) and (time.localtime(departure_time).tm_hour in [0, 1, 2, 3, 4])):
                             return (arrival_time + (departure_time + 24 * 60 * 60)) / 2
                         else:
                             return (arrival_time + departure_time) / 2
@@ -243,9 +251,9 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
                                 departure_time = time.mktime(time.strptime(f"2023:{departure_time}", "%Y:%H:%M:%S")) / 60
                                 departure_time += ((day - 1) * 24 * 60 * 60) / 60
                                 # If arrival is at end of one day and departure is at start of next, then add one day to departure timing
-                                # Assumption is late arrival would be post 8 PM and early departure would be before 4 AM
+                                # Assumption is late arrival would be post 7 PM and early departure would be before 5 AM
                                 if(arrival_time != 'None'):
-                                    if((time.localtime(arrival_time * 60).tm_hour in [20, 21, 22, 23]) and (time.localtime(departure_time * 60).tm_hour in [0, 1, 2, 3])):
+                                    if((time.localtime(arrival_time * 60).tm_hour in [19, 20, 21, 22, 23]) and (time.localtime(departure_time * 60).tm_hour in [0, 1, 2, 3, 4])):
                                         departure_time += (24 * 60 * 60) / 60
                                 assert(departure_time >= previous_departure_time)
                                 assert(departure_time >= previous_arrival_time)
