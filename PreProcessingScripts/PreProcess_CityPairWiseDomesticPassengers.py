@@ -19,8 +19,12 @@ def fetch_CityPairWiseDomesticPassengers():
         domestic_data_rev = domestic_data.copy()
         domestic_data.rename({'PASSENGERS TO CITY 2': 'PASSENGERS', 'FREIGHT TO CITY 2': 'FREIGHT', 'MAIL TO CITY 2': 'MAIL', 'CITY 1': 'FROM', 'CITY 2': 'TO'}, axis = 1, inplace = True)
         domestic_data.drop(['PASSENGERS FROM CITY 2', 'FREIGHT FROM CITY 2', 'MAIL FROM CITY 2', 'S.No.'],axis = 1, inplace = True)
+        domestic_data['FROM'] = domestic_data['FROM'].replace({'KALABURAGI, KARNATAKA': 'KALABURAGI'})
+        domestic_data['TO'] = domestic_data['TO'].replace({'KALABURAGI, KARNATAKA': 'KALABURAGI'})
         domestic_data_rev.rename({'PASSENGERS FROM CITY 2': 'PASSENGERS', 'FREIGHT FROM CITY 2': 'FREIGHT', 'MAIL FROM CITY 2': 'MAIL', 'CITY 2': 'FROM', 'CITY 1': 'TO'}, axis = 1, inplace = True)
         domestic_data_rev.drop(['PASSENGERS TO CITY 2', 'FREIGHT TO CITY 2', 'MAIL TO CITY 2', 'S.No.'],axis = 1, inplace = True)
+        domestic_data_rev['FROM'] = domestic_data_rev['FROM'].replace({'KALABURAGI, KARNATAKA': 'KALABURAGI'})
+        domestic_data_rev['TO'] = domestic_data_rev['TO'].replace({'KALABURAGI, KARNATAKA': 'KALABURAGI'})
         total_domestic_data = pd.concat([total_domestic_data, domestic_data, domestic_data_rev], axis = 0)
     
     total_domestic_data['Route'] = total_domestic_data[['FROM', 'TO']].apply(lambda x: f"{x['FROM']}-{x['TO']}", axis = 1)
