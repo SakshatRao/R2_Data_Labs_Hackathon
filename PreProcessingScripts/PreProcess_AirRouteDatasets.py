@@ -53,6 +53,59 @@ def fetch_AirRouteDatasets():
 
 # # Testing
 # fetch_AirRouteDatasets()
+    
+def fetch_IntlAirRouteDatasets():
+
+    # Airport/City Data Mapping
+    airport_city_data = pd.read_csv("./Datasets/IntlCityMapping.csv")
+    airport_city_data.to_csv("./PreProcessed_Datasets/IntlCityMapping.csv", index = None)
+
+    # Flights Data
+    print("Opening International AirRouteDatasets - Flights")
+    network_data = pd.read_excel("./Datasets/AirRouteDatasets/FlightConnectionsData_IntlFlights.ods")
+    network_data.fillna(0, inplace = True)
+    network_data = network_data.melt(
+        id_vars = ['From', 'To', 'Distance', 'Time', 'Cheapest Price'],
+        value_vars = ['Narrow Body', 'Others', 'Wide Body'],
+        var_name = "Aircraft Type",
+        value_name = "Number of Flights"
+    )
+    network_data = network_data[network_data['Number of Flights'] > 0]
+
+    def duration_to_mins(duration):
+        duration_lower = duration.lower()
+        hr = 0; min = 0
+        if('h' in duration_lower):
+            hr = duration_lower.split('h')[0]
+            if('m' in duration_lower):
+                min = duration_lower.split('h')[1].split('m')[0]
+            else:
+                min = 0
+        else:
+            hr = 0
+            min = duration_lower.split('m')[0]
+        hr = int(hr)
+        min = int(min)
+        return hr * 60 + min
+    network_data['Time'] = network_data['Time'].apply(duration_to_mins)
+
+    network_data.to_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_IntlFlights.csv", index = None)
+    network_airports = set(list(network_data['From'].values) + list(network_data['To'].values))
+
+    # Airports Data
+    print("Opening AirRouteDatasets - IntlAirports")
+    airport_data = pd.read_excel("./Datasets/AirRouteDatasets/FlightConnectionsData_IntlAirports.ods")
+    airport_data.to_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_IntlAirports.csv", index = None)
+    airports = set(list(airport_data['Name'].values))
+
+    print("Airports which are included in routes but not in airport list are -")
+    if(len(network_airports - airports) > 0):
+        print(network_airports - airports)
+    else:
+        print("None")
+
+# # Testing
+# fetch_IntlAirRouteDatasets()
 
 def fetch_SampleAirRouteDatasets(sample_num = 1):
 

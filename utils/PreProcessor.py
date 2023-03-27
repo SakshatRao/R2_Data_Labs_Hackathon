@@ -2,7 +2,10 @@ import numpy as np
 import pandas as pd
 import json
 
-from PreProcessingScripts.PreProcess_AirRouteDatasets import fetch_AirRouteDatasets, fetch_SampleAirRouteDatasets
+import shutil
+import os
+
+from PreProcessingScripts.PreProcess_AirRouteDatasets import fetch_AirRouteDatasets, fetch_IntlAirRouteDatasets, fetch_SampleAirRouteDatasets
 from PreProcessingScripts.PreProcess_CityPairWiseDomesticPassengers import fetch_CityPairWiseDomesticPassengers
 from PreProcessingScripts.PreProcess_IndianRailwaysData import fetch_IndianRailwaysData
 from PreProcessingScripts.PreProcess_IndiaSocioEconomicData import fetch_IndiaSocioEconomicData
@@ -15,10 +18,29 @@ class PreProcessor:
         self.sample_num = sample_num
 
         if(preprocess_all_raw_data):
+
+            shutil.rmtree(f'./PreProcessed_Datasets/', ignore_errors = True)
+            new_dirs = [
+                'AirRouteDatasets',
+                'CityPairWiseDomesticPassengers',
+                'IndiaEconomicData',
+                'IndiaEducationalData',
+                'IndiaSocialData',
+                'IndiaTourismData',
+                'OtherTransportModes/Railways/IndianRailwayRoutes',
+                'OtherTransportModes/Railways/IndianRailwayStations',
+                'SampleAirRouteDatasets',
+                'Models/PCA',
+                'Models/Present_Features'
+            ]
+            for new_dir in new_dirs:
+                os.makedirs(f'./PreProcessed_Datasets/{new_dir}/')
+
             # Converting raw datasets to processed datasets
             print("**************************************")
             print("Converting Raw Datasets into PreProcessed Datasets")
             fetch_AirRouteDatasets()
+            fetch_IntlAirRouteDatasets()
             fetch_SampleAirRouteDatasets(sample_num = self.sample_num)
             fetch_CityPairWiseDomesticPassengers()
             self.city_mapping = pd.read_csv('./PreProcessed_Datasets/CityMapping.csv')
@@ -41,8 +63,11 @@ class PreProcessor:
 
     def fetch_PreProcessed_AirRouteDatasets(self):
         self.city_mapping = pd.read_csv('./PreProcessed_Datasets/CityMapping.csv')
+        self.intl_city_mapping = pd.read_csv('./PreProcessed_Datasets/IntlCityMapping.csv')
         self.all_network_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_Flights.csv")
         self.all_airport_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_Airports.csv")
+        self.intl_network_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_IntlFlights.csv")
+        self.intl_airport_data = pd.read_csv("./PreProcessed_Datasets/AirRouteDatasets/FlightConnectionsData_IntlAirports.csv")
         self.network_data = pd.read_csv(f"./PreProcessed_Datasets/SampleAirRouteDatasets/Sample{self.sample_num}.csv")
         self.network_data.drop('Dummy', axis = 1, inplace = True)
         print("Loaded AirRouteDatasets")
