@@ -5,6 +5,19 @@ import json
 import locale
 import re
 
+# Dataset Sources:
+# -> Economic Data: https://www.kaggle.com/datasets/webaccess/all-census-data?select=gdp_Maharashtra1.csv
+# -> Population/Houshold/Area Data: https://censusindia.gov.in/nada/index.php/catalog/42526/download/46152/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx
+# -> Decadal Variation in Population: https://censusindia.gov.in/census.website/data/census-tables# (table PC11_A02: A-02: Decadal variation in population 1901-2011)
+# -> Latest Indian City Population Data: https://worldpopulationreview.com/countries/cities/india
+# -> Education Data: https://censusindia.gov.in/census.website/data/census-tables# (tables 1991-C02T: C-2 Age Sex And Educational Level - All Areas, PC01_C08a: C-08 Appendix: Education level graduate and above by sex for population age 15 and above (all) - Appendix, PC11_C08a: C-08 Appendix: Educational level graduate and above by sex for population age 15 and above (total) - Appendix)
+
+##################################################
+# fetch_IndiaSocioEconomicData
+##################################################
+# -> Used for fetching social, economic &
+#    education data for different Indian districts
+##################################################
 def fetch_IndiaSocioEconomicData():
 
     # Economic Data
@@ -29,7 +42,7 @@ def fetch_IndiaSocioEconomicData():
         economic_data.rename({'GDP (in Rs. Cr.)': 'GDP', 'Growth Rate % (YoY)': 'GrowthRate'}, axis = 1, inplace = True)
         total_economic_data = pd.concat([total_economic_data, economic_data], axis = 0)
     
-    # For easier analysis
+    # For easier analysis, we change few values in dataset for consistency
     total_economic_data = total_economic_data.groupby(['State', 'District', 'Year'])['GDP'].aggregate('mean').reset_index(drop = False)
     total_economic_data['District'].replace({'KAMRUP (METROPOLITAN)': 'KAMRUP METROPOLITAN', 'DEHRADIN': 'DEHRADUN'}, inplace = True)
     
@@ -40,6 +53,7 @@ def fetch_IndiaSocioEconomicData():
     pop_area_household_data = pd.read_excel("./Datasets/IndiaSocialData/A-1_NO_OF_VILLAGES_TOWNS_HOUSEHOLDS_POPULATION_AND_AREA.xlsx", header = [0, 1, 2, 3])
     pop_area_household_data = pop_area_household_data.drop(pop_area_household_data.columns[1:3], axis = 1)
     pop_area_household_data.columns = ['_'.join([str(x) for x in col]) for col in pop_area_household_data.columns.values]
+    # Renaming columns for better readability
     pop_area_household_data.rename({
         'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_State  Code_Unnamed: 0_level_2_1': 'StateCode',
         'A-1 NUMBER OF VILLAGES, TOWNS, HOUSEHOLDS, POPULATION AND AREA_India/ State/ Union Territory/ District/ Sub-district_Unnamed: 3_level_2_4': 'IsDistrict',
@@ -123,6 +137,8 @@ def fetch_IndiaSocioEconomicData():
     print("Opening Education Data")
     all_education_data_df = pd.DataFrame()
     
+    # Iterate over 1991, 2001 & 2011 to fetch respective education survey data
+    # NOTE: Processing for each year is different since data over 3 surveys is not in consistent format
     for year in ['2011', '2001', '1991']:
         education_yearly_data_files = os.listdir(f"./Datasets/IndiaEducationalData/{year}/")
         education_yearly_data_files = [x for x in education_yearly_data_files if x.startswith(".") == False]
@@ -132,6 +148,7 @@ def fetch_IndiaSocioEconomicData():
             else:
                 education_yearly_data = pd.read_excel(f"./Datasets/IndiaEducationalData/{year}/" + education_yearly_data_file, header = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12], skiprows = [0, 1])
             education_yearly_data.columns = ['_'.join([str(x) for x in col]) for col in education_yearly_data.columns.values]
+            # Rename columns for better readability
             if(year == '2011'):
                 education_data_col_map = {
                     'Area Name_Unnamed: 3_level_1_Unnamed: 3_level_2_Unnamed: 3_level_3_Unnamed: 3_level_4_Unnamed: 3_level_5': 'District',
@@ -196,6 +213,7 @@ def fetch_IndiaSocioEconomicData():
                 district_education_data = education_yearly_data[education_yearly_data['District'] == district]
                 age_wise_cols = ['TotalPopulation', 'TotalMalePopulation', 'TotalFemalePopulation', 'Graduates', 'MaleGraduates', 'FemaleGraduates']
                 if(year == '1991'):
+                    # For 1991 survey, combine 35-39, 40-44, 45-49, 50-54 & 55-59 bins into single 35-59 bin (for consistency with 2001 & 2011 survey data)
                     district_education_data.reset_index(drop = True, inplace = True)
                     district_education_data_35_59 = district_education_data[(district_education_data['AgeGroup'] == '35-39') | (district_education_data['AgeGroup'] == '40-44') | (district_education_data['AgeGroup'] == '45-49') | (district_education_data['AgeGroup'] == '50-54') | (district_education_data['AgeGroup'] == '55-59')]
                     to_remove_idx = district_education_data_35_59.index
@@ -204,6 +222,7 @@ def fetch_IndiaSocioEconomicData():
                     district_education_data = district_education_data.drop(to_remove_idx, axis = 0)
                     district_education_data = pd.concat([district_education_data, district_education_data_35_59], axis = 0)
 
+                    # For 1991 survey, combine 60-64, 65-69, 70-74, 75-79 & 80+ bins into single 60+ bin (for consistency with 2001 & 2011 survey data)
                     district_education_data.reset_index(drop = True, inplace = True)
                     district_education_data_60_plus = district_education_data[(district_education_data['AgeGroup'] == '60-64') | (district_education_data['AgeGroup'] == '65-69') | (district_education_data['AgeGroup'] == '70-74') | (district_education_data['AgeGroup'] == '75-79') | (district_education_data['AgeGroup'] == '80+')]
                     to_remove_idx = district_education_data_60_plus.index
@@ -211,6 +230,8 @@ def fetch_IndiaSocioEconomicData():
                     district_education_data_60_plus['AgeGroup'] = ['60+']
                     district_education_data = district_education_data.drop(to_remove_idx, axis = 0)
                     district_education_data = pd.concat([district_education_data, district_education_data_60_plus], axis = 0)
+                
+                # Final Age Groups: ['20-24', '25-29', '30-34', '35-59', '60+'] (15-19 will be dropped later due to almost zero data)
                 for age_group in ['15-19', '20-24', '25-29', '30-34', '35-59', '60+']:
                     age_group_data = district_education_data[district_education_data['AgeGroup'] == age_group][age_wise_cols].sum()
                     age_group_data = pd.DataFrame([age_group_data.values], columns = [f"{age_group}_{x}" for x in age_wise_cols])
@@ -221,7 +242,7 @@ def fetch_IndiaSocioEconomicData():
                 all_education_data_df = pd.concat([all_education_data_df, district_data_df], axis = 0)
     
     all_education_data_df = all_education_data_df.sort_values(['State', 'District', 'Year'])
-    all_education_data_df = all_education_data_df.drop([x for x in all_education_data_df.columns if x.startswith('15-19')], axis = 1)
+    all_education_data_df = all_education_data_df.drop([x for x in all_education_data_df.columns if x.startswith('15-19')], axis = 1)    # Dropping due to almost zero data
     all_education_data_df.to_csv("./PreProcessed_Datasets/IndiaEducationalData/EducationData.csv", index = None)
 
 # # Testing

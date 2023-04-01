@@ -1,12 +1,24 @@
 import numpy as np
 import pandas as pd
 
+# Dataset Sources:
+# -> Domestic & Foreign visitors to Centrally Protected Ticketed Monuments Data: Data manually collected from https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwiY35yy0f39AhVlSWwGHXL6CwIQFnoECBIQAQ&url=https%3A%2F%2Ftourism.gov.in%2Fsites%2Fdefault%2Ffiles%2F2022-09%2FIndia%2520Tourism%2520Statistics%25202022%2520%2528English%2529.pdf&usg=AOvVaw1-4KC-GKJIlotlsIxFxFMe, https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjTk-rA0f39AhVGT2wGHcHyDEEQFnoECAwQAQ&url=https%3A%2F%2Ftourism.gov.in%2Fsites%2Fdefault%2Ffiles%2F2022-09%2FIndia%2520Tourism%2520Statistics%25202021%2520%25281%2529.pdf&usg=AOvVaw3h3V-3AQKvZHtdbq5QSM7j, https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=&cad=rja&uact=8&ved=2ahUKEwjShrDE0f39AhWJSGwGHVQxBooQFnoECBAQAQ&url=https%3A%2F%2Ftourism.gov.in%2Fsites%2Fdefault%2Ffiles%2F2021-05%2FINDIA%2520TOURISM%2520STATISTICS%25202020.pdf&usg=AOvVaw0INamqon9LOB2ASVUCEIb0
+# -> Tourism Location Coordinates: Data manually collected from https://www.google.com/maps
+
+##################################################
+# fetch_IndiaTourismData
+##################################################
+# -> Used for fetching tourism data related to
+#    several Centrally Protected Ticketed
+#    Monuments from 2018 to 2022
+# -> Also loads the coordinates of each monument
+#    to map its nearest cities
+##################################################
 def fetch_IndiaTourismData():
 
     # Monument Visitors
     print("Opening Monument Visitors Data - Visitors Data")
     monument_visitors_file = open('./Datasets/IndiaTourismData/MonumentVisitors.txt', 'r')
-    # monument_visitors = monument_visitors_file.readline()
 
     year = 2023
     years = []
@@ -52,6 +64,7 @@ def fetch_IndiaTourismData():
             city_data = [city]
         cnt += 1
     
+    # Deciding on column names
     cols = ['City', 'n-2:n-1, Domestic', 'n-2:n-1, Foreign', 'n-1:n, Domestic', 'n-1:n, Foreign', 'Number of Monuments']
     monument_visitors_data = pd.concat([pd.DataFrame(data[x], index = np.repeat(years[x], len(data[x])), columns = cols) for x in range(len(data))], axis = 0).reset_index(drop = False).rename({'index': 'Year'}, axis = 1)
 
@@ -73,6 +86,7 @@ def fetch_IndiaTourismData():
     }, axis = 1, inplace = True)
     monument_visitors_data = monument_visitors_data.reset_index(drop = False).rename({'index': 'City'}, axis = 1)
 
+    # If values for certain rows are missing, fill them in by using neighbouring values (assuming linear trend)
     for idx in range(monument_visitors_data.shape[0]):
         row = monument_visitors_data.iloc[idx]
         if(pd.isnull(row['NumMonuments2020'])):

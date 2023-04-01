@@ -4,6 +4,24 @@ import json
 import time
 from collections import OrderedDict
 
+# Dataset Sources:
+# -> Railway Connectivity Data: https://github.com/datameet/railways
+# -> District Centroids: https://www.kaggle.com/datasets/sirpunch/indian-census-data-with-geospatial-indexing?select=district+wise+centroids.csv
+# -> Station Codes: Queried from https://en.wikipedia.org/wiki/List_of_railway_stations_in_India
+
+##################################################
+# fetch_IndianRailwaysData
+##################################################
+# -> Used for fetching railway connectivity info
+#    between 2 Indian cities
+# -> First step involves mapping each station to
+#    a district, second step is to then collect
+#    railway info between 2 cities' districts
+# -> district_to_city_map: Mapping of each city's
+#    district to each city
+# -> save_station_to_district_map: True for first
+#    step, False for second step
+##################################################
 def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map = False):
 
     # Railways Data
@@ -21,7 +39,7 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
         district_centroid_df = pd.concat([district_centroid_df1, district_centroid_df2], axis = 0)
         district_centroid_df = district_centroid_df.groupby(['State', 'District'])[['Latitude', 'Longitude']].aggregate('mean').reset_index(drop = False)
 
-        # Station Codes
+        # Station Codes & Station State info
         print("Opening Station Codes Data")
         station_codes_file = open("./Datasets/OtherTransportModes/Railways/IndianRailwayStations/StationCodes.txt")
         station_codes = station_codes_file.read()
@@ -119,6 +137,8 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
             state = state_district_centroids.iloc[closest_district_idx]['State']
             return district, state
         
+        # Find district associated with each station
+        # This helps in mapping station to Tier-I/II cities we are interested in
         all_station_districts = {}
         for station in stations_data:
             station_code = station['properties']['code']
@@ -131,6 +151,7 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
         all_station_districts_df = pd.DataFrame.from_dict(all_station_districts, orient = 'index').reset_index(drop = False)
         all_station_districts_df = all_station_districts_df.rename({'index': 'StationCode'}, axis = 1)
 
+        # If 2 districts have same name, add state info to its name to distinguish
         def duplicate_districts(row):
             if(row['District'] in ['Bilaspur', 'Raigarh', 'Aurangabad']):
                 return row['District'] + '_' + row['State']
@@ -140,8 +161,9 @@ def fetch_IndianRailwaysData(district_to_city_map, save_station_to_district_map 
 
         all_station_districts_df.to_csv("./PreProcessed_Datasets/OtherTransportModes/Railways/IndianRailwayStations/all_station_districts.csv", index = None)
     
-    else:
+    else:    # Load railway connectivity info for cities present in district_to_city_map
         
+        # Load previously stored station-to-district mapping
         all_station_districts_df = pd.read_csv("./PreProcessed_Datasets/OtherTransportModes/Railways/IndianRailwayStations/all_station_districts.csv")
         all_station_districts_df = all_station_districts_df.set_index("StationCode")
         all_station_districts = all_station_districts_df.to_dict(orient = "index")
