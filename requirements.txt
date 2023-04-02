@@ -1,4 +1,3 @@
-# Pip install
 numpy
 pandas
 scipy
@@ -9,9 +8,3 @@ odfpy
 geopy
 seaborn
 ipympl
-
-# Other commands
-conda install nb_conda_kernels
-conda install ipykernel
-pip install --force-reinstall -v "openpyxl==3.1.0"
-pip install -U scikit-learn scipy matplotlib
